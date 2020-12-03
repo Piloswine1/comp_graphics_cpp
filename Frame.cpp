@@ -23,9 +23,9 @@ void Frame::drawFigure()
         QPointF points[dataPolygons[i].size()];
 
         for (int j = 0; j < dataPolygons[i].size(); j++) {
-            const auto temp = dataPoints[dataPolygons[i][j]];
+            const auto& temp = dataPoints[dataPolygons[i][j]];
             const auto point = temp.toPointF();
-            const auto dist = dataPoints[dataPolygons[i][j]].distanceToPlane({100, 100, 100}, {1, 1, 1});
+            const auto dist = temp.distanceToPlane({100, 100, 100}, {0.5, 0.5, 0.5});
             points[j] = QPointF(point - QPointF{dist, dist});
         }
 

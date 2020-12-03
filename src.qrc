@@ -2,5 +2,6 @@
     <qresource prefix="/img">
         <file>file_add.png</file>
         <file>icon.png</file>
+        <file>MAI.ico</file>
     </qresource>
 </RCC>

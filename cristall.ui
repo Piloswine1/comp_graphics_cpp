@@ -30,7 +30,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="src.qrc">
-    <normaloff>:/img/icon.png</normaloff>:/img/icon.png</iconset>
+    <normaloff>:/img/MAI.ico</normaloff>:/img/MAI.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="widget" native="true">
@@ -418,7 +418,7 @@
      <x>0</x>
      <y>0</y>
      <width>853</width>
-     <height>18</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="styleSheet">
