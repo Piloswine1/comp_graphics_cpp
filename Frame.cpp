@@ -25,8 +25,13 @@ void Frame::drawFigure()
         for (int j = 0; j < dataPolygons[i].size(); j++) {
             const auto& temp = dataPoints[dataPolygons[i][j]];
             const auto point = temp.toPointF();
+<<<<<<< Updated upstream
             const auto dist = temp.distanceToPlane({100, 100, 100}, {0.5, 0.5, 0.5});
             points[j] = QPointF(point - QPointF{dist, dist});
+=======
+//            const auto dist = temp.distanceToPlane({100, 100, 100}, {1, 1, -1});
+            points[j] = QPointF(point);
+>>>>>>> Stashed changes
         }
 
         painter.drawPolygon(points, dataPolygons[i].size());
