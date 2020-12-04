@@ -24,7 +24,6 @@ Cristall::~Cristall()
 
 void Cristall::slotAddFile()
 {
-//    QString path = QFileDialog::getOpenFileName(0, "Выберете файл!", "", "*.vtk");
     QString path = QFileDialog::getOpenFileName(0, "Выберете файл!", "", "*.vtk");
     if (path == 0)
     {
