@@ -9,27 +9,11 @@ Frame::Frame(QWidget *parent) : QWidget(parent)
 
 /* ------------------ Draw Figure ------------------ */
 
-std::function<void(QPainter *, const _dataPolyg &, const _dataPoints &)> helper(Frame::DrawType type)
-{
-    switch (type) {
-    case Frame::DrawType::Lab:
-        return Lab::draw;
-    case Frame::DrawType::ZBuf:
-        return ZBuff::draw;
-    case Frame::DrawType::Guro:
-        return Guro::draw;
-    case Frame::DrawType::Vejler:
-        return Vejler::draw;
-    default:
-        return Lab::draw;
-    }
-}
-
 void Frame::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     painter.begin(this);
-    helper(_type)(&painter, dataPolygons, dataPoints);
+    _draw(&painter, dataPolygons, dataPoints);
     painter.end();
 }
 /* ------------------ Figure operations------------------ */
@@ -261,9 +245,25 @@ bool Frame::upload(QString path)
     return true;
 }
 
+std::function<void(QPainter *, const _dataPolyg &, const _dataPoints &)> helper(Frame::DrawType type)
+{
+    switch (type) {
+    case Frame::DrawType::Lab:
+        return Lab::draw;
+    case Frame::DrawType::ZBuf:
+        return ZBuff::draw;
+    case Frame::DrawType::Guro:
+        return Guro::draw;
+    case Frame::DrawType::Vejler:
+        return Vejler::draw;
+    default:
+        return Lab::draw;
+    }
+}
+
 void Frame::setType(Frame::DrawType type)
 {
-    _type = type;
+    _draw = helper(type);
     repaint();
 }
 

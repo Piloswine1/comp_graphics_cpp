@@ -71,7 +71,7 @@ protected:
 private:
     QPainter painter;
 
-    DrawType _type = DrawType::Lab;
+    drawFunc _draw = Lab::draw;
 
     QPoint _p;
 
