@@ -21,8 +21,6 @@ public:
     ~Cristall();
 
 private slots:
-    void slotAddFile();
-    void slotExit();
     void slotChangeAngle();
     void on_goStepX_clicked();
     void on_goStepY_clicked();
@@ -36,6 +34,10 @@ private slots:
     void on_goReflectX_clicked();
     void on_goReflectY_clicked();
     void on_goReflectZ_clicked();
+
+    void on_pushButton_clicked();
+
+    void on_comboBox_activated(int index);
 
 private:
     Ui::Cristall *ui;

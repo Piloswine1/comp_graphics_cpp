@@ -6,8 +6,6 @@ Cristall::Cristall(QWidget *parent)
     , ui(new Ui::Cristall)
 {
     ui->setupUi(this);
-    connect(ui->addFile, SIGNAL(triggered()), this, SLOT(slotAddFile()));
-    connect(ui->exit, SIGNAL(triggered()), this, SLOT(slotExit()));
     connect(ui->FiX, SIGNAL(textChanged(QString)), this, SLOT(slotChangeAngle()));
     connect(ui->FiY, SIGNAL(textChanged(QString)), this, SLOT(slotChangeAngle()));
     connect(ui->FiZ, SIGNAL(textChanged(QString)), this, SLOT(slotChangeAngle()));
@@ -21,28 +19,6 @@ Cristall::~Cristall()
     canvas->deleteLater();
     delete ui;
 }
-
-void Cristall::slotAddFile()
-{
-    QString path = QFileDialog::getOpenFileName(0, "Выберете файл!", "", "*.vtk");
-    if (path == 0)
-    {
-        QMessageBox::warning(this, "Внимание!", "Вы не выбрали файл!");
-        return;
-    }
-    else
-    {
-        QFileInfo info(path);
-        ui->uiPath->setText(info.baseName());
-        canvas->upload(path);
-    }
-}
-
-void Cristall::slotExit()
-{
-    this->close();
-}
-
 
 void Cristall::slotChangeAngle()
 {
@@ -109,4 +85,25 @@ void Cristall::on_goReflectY_clicked()
 void Cristall::on_goReflectZ_clicked()
 {
     canvas->reflectZ();
+}
+
+void Cristall::on_pushButton_clicked()
+{
+    QString path = QFileDialog::getOpenFileName(0, "Выберете файл!", "", "*.vtk");
+    if (path == 0)
+    {
+        QMessageBox::warning(this, "Внимание!", "Вы не выбрали файл!");
+        return;
+    }
+    else
+    {
+        QFileInfo info(path);
+        ui->uiPath->setText(info.baseName());
+        canvas->upload(path);
+    }
+}
+
+void Cristall::on_comboBox_activated(int index)
+{
+    canvas->setType(static_cast<Frame::DrawType>(index));
 }

@@ -10,12 +10,21 @@ CONFIG += c++11
 
 SOURCES += \
     Frame.cpp \
+    guro.cpp \
+    lab.cpp \
     main.cpp \
-    cristall.cpp
+    cristall.cpp \
+    vejler.cpp \
+    zbuff.cpp
 
 HEADERS += \
     Frame.h \
-    cristall.h
+    common.h \
+    cristall.h \
+    guro.h \
+    lab.h \
+    vejler.h \
+    zbuff.h
 
 FORMS += \
     cristall.ui

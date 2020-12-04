@@ -2,8 +2,6 @@
 #define FRAME_H
 
 #include <QWidget>
-#include <QPainter>
-#include <QVector>
 #include <QFile>
 #include <QMessageBox>
 #include <QtMath>
@@ -13,13 +11,21 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 
+#include "common.h"
+#include "lab.h"
+#include "zbuff.h"
+#include "guro.h"
+#include "vejler.h"
+
 class Frame : public QWidget
 {
     Q_OBJECT
 public:
     Frame(QWidget * parent = 0);
+    enum DrawType {Lab, ZBuf, Guro, Vejler};
+
     bool upload(QString);
-    void drawFigure();
+    void setType(DrawType type);
     void setFiX(double initFiX){FiX = initFiX * M_PI / 180;};
     void setFiY(double initFiY){FiY = initFiY * M_PI / 180;};
     void setFiZ(double initFiZ){FiZ = initFiZ * M_PI / 180;};
@@ -37,6 +43,7 @@ public:
     void reflectX();
     void reflectY();
     void reflectZ();
+
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -62,9 +69,9 @@ protected:
 
 
 private:
-    typedef QVector<QVector<int>> _dataPolyg;
-    typedef QVector<QVector3D> _dataPoints;
     QPainter painter;
+
+    DrawType _type = DrawType::Lab;
 
     QPoint _p;
 

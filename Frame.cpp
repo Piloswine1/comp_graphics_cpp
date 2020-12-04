@@ -1,4 +1,5 @@
 #include "Frame.h"
+#include <functional>
 
 Frame::Frame(QWidget *parent) : QWidget(parent)
 {
@@ -8,32 +9,29 @@ Frame::Frame(QWidget *parent) : QWidget(parent)
 
 /* ------------------ Draw Figure ------------------ */
 
+std::function<void(QPainter *, const _dataPolyg &, const _dataPoints &)> helper(Frame::DrawType type)
+{
+    switch (type) {
+    case Frame::DrawType::Lab:
+        return Lab::draw;
+    case Frame::DrawType::ZBuf:
+        return ZBuff::draw;
+    case Frame::DrawType::Guro:
+        return Guro::draw;
+    case Frame::DrawType::Vejler:
+        return Vejler::draw;
+    default:
+        return Lab::draw;
+    }
+}
+
 void Frame::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     painter.begin(this);
-    drawFigure();
+    helper(_type)(&painter, dataPolygons, dataPoints);
     painter.end();
 }
-
-void Frame::drawFigure()
-{
-    for (int i = 0; i < dataPolygons.size(); i++)
-    {
-        QPointF points[dataPolygons[i].size()];
-
-        for (int j = 0; j < dataPolygons[i].size(); j++) {
-            const auto& temp = dataPoints[dataPolygons[i][j]];
-            const auto point = temp.toPointF();
-//            const auto dist = temp.distanceToPlane({100, 100, 100}, {0.5, 0.5, 0.5});
-//            points[j] = QPointF(point - QPointF{dist, dist});
-              points[j] = QPointF(point);
-        }
-
-        painter.drawPolygon(points, dataPolygons[i].size());
-    }
-}
-
 /* ------------------ Figure operations------------------ */
 
 void Frame::mouseMoveEvent(QMouseEvent *event)
@@ -263,7 +261,13 @@ bool Frame::upload(QString path)
     return true;
 }
 
-Frame::_dataPoints Frame::parsePoints(QFile *file)
+void Frame::setType(Frame::DrawType type)
+{
+    _type = type;
+    repaint();
+}
+
+_dataPoints Frame::parsePoints(QFile *file)
 {
     _dataPoints retval;
 
@@ -285,7 +289,7 @@ Frame::_dataPoints Frame::parsePoints(QFile *file)
     return retval;
 }
 
-Frame::_dataPolyg Frame::parsePolygons(QFile *file)
+_dataPolyg Frame::parsePolygons(QFile *file)
 {
     _dataPolyg retval;
 
