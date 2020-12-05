@@ -5,7 +5,13 @@ ZBuff::ZBuff()
 
 }
 
-void ZBuff::draw(QPainter *, const _dataPolyg &, const _dataPoints &)
+struct dot
+{
+    int d;
+    Qt::GlobalColor c;
+};
+
+void ZBuff::draw(QPainter * painter, const _dataPolyg &dataPolygons, const _dataPoints &dataPoints)
 {
 
 }

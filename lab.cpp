@@ -26,7 +26,7 @@ void Lab::draw(QPainter *painter, const _dataPolyg &dataPolygons, const _dataPoi
             };
 
             for (const auto &point: polygon)
-                  points.push_back(dataPoints[point].toPoint());
+                points.push_back(dataPoints[point].toPoint() + QPoint{250, 250});
 
             std::accumulate(std::next(points.begin()), points.end(),
                             points.front(),

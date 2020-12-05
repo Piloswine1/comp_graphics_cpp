@@ -4,6 +4,8 @@
 #include <QVector>
 #include <QVector3D>
 #include <QPainter>
+#include <QColor>
+#include <QPixmap>
 
 typedef QVector<QVector<int>> _dataPolyg;
 typedef QVector<QVector3D> _dataPoints;

@@ -278,9 +278,9 @@ _dataPoints Frame::parsePoints(QFile *file)
     for (QString tmp = file->readLine(); !tmp.contains("POLYGONS"); tmp = file->readLine()) {
         QStringList list = tmp.trimmed().split(QRegExp(" "));
         retval.push_back({
-            100 * list.at(0).toFloat() + 250.f,
-            100 * list.at(1).toFloat() + 250.f,
-            100 * list.at(2).toFloat() + 250.f
+            100 * list.at(0).toFloat(),
+            100 * list.at(1).toFloat(),
+            100 * list.at(2).toFloat()
         });
         if (file->atEnd())
             return {};
