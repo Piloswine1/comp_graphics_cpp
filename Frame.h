@@ -97,6 +97,8 @@ private:
         double x, y, z;
     };
 
+    typedef QVector<QVector<coord>> _polygonsF;
+
     coord lightCoord;
 
     _dataPolyg dataPolygons;
@@ -117,8 +119,8 @@ private:
     void customLine(int, intCoord&, intCoord&, QMap<int, QVector<intCoord>>&);
     void addInBuffFrame(int, int, int);
 
-    void reduce_polygons(_dataPolyg*, _dataPoints*);
-    void draw_reduced(const _dataPolyg&, const _dataPoints&);
+    _polygonsF reduce_polygons();
+    void draw_reduced(const _polygonsF&);
 };
 
 #endif // FRAME_H

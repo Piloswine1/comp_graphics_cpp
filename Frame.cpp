@@ -87,10 +87,8 @@ void Frame::drawFigureZBuffer()
 
 void Frame::drawFigureVeyler()
 {
-//    _dataPolyg tmpdataPolygons;
-//    _dataPoints tmpdataPoints;
-//    reduce_polygons(&tmpdataPolygons, &tmpdataPoints);
-//    draw_reduced(tmpdataPolygons, tmpdataPoints);
+//    const auto toDraw = reduce_polygons();
+//    draw_reduced(toDraw);
     drawFigureZBuffer();
 }
 
@@ -207,10 +205,11 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-void Frame::reduce_polygons(_dataPolyg *, _dataPoints *)
+Frame::_polygonsF Frame::reduce_polygons()
 {
-    // sort polygons
+    // сортирууем палигончики
     auto onePolygComp = [&](const int* const& a, const int* const& b) { return dataPoints[*a].z() < dataPoints[*b].z(); };
+    auto polygonsFComp = [&](const Frame::coord &a, const Frame::coord &b) { return a.z < b.z; };
     auto polygSort = [&](const _dataOnePolyg &a, const _dataOnePolyg &b){
         const auto min_a = std::min(a.begin(), a.end(), onePolygComp);
         const auto min_b = std::min(b.begin(), b.end(), onePolygComp);
@@ -220,35 +219,48 @@ void Frame::reduce_polygons(_dataPolyg *, _dataPoints *)
     _dataPolyg sorted(dataPolygons);
     std::sort(sorted.begin(), sorted.end(), polygSort);
 
-    //
-    const auto first = sorted.front();
-    sorted.pop_front();
+    const auto first = sorted.front(); sorted.pop_front();
 
-    _dataPolyg front,
+    // вот тут надо порезать полигоны
+    _polygonsF front,
                back;
+    while(!sorted.empty()) {
+        const auto polyg = sorted.front(); sorted.pop_front();
 
-    for (const auto &polyg : sorted)
+
+
         Q_UNUSED(polyg)
-//        отсечь как то надо, бляя тут сложн
-//        if (isFront)
-//            front.push_back(polyg);
-//        else
-//            back.push_back(polyg);
+    }
 
-    _dataPolyg toReduce;
-    const auto max = std::max(first.begin(), first.end(), onePolygComp);
-    for (const auto &polyg : back)
-        for (const auto &point : polyg)
-            if (dataPoints[point].z() < *max)
-                toReduce.push_back(polyg);
+    // TODO: бля как нитть находить шо сзади...
+    auto find_behind = [](){};
 
-    if (!toReduce.empty())
-        QDebug(QtMsgType::QtFatalMsg)<<"Пока хз че с этим делать!";
+    // удалить все закрывающие
+    for (const auto &polyg : front) {
+        const auto behind = std::find(back.begin(), back.end(), find_behind);
+        const auto behind_min = std::min(behind->begin(), behind->end(), polygonsFComp);
+        const auto polyg_max = std::max(polyg.begin(), polyg.end(), polygonsFComp);
+        if (behind_min->z > polyg_max->z)
+            back.erase(behind);
+    }
+
+    if (!back.empty())
+        QDebug(QtMsgType::QtFatalMsg)<<"Пока хз че с этим делать!\n"<<back;
+
+    return front;
 }
 
-void Frame::draw_reduced(const _dataPolyg &, const _dataPoints &)
+void Frame::draw_reduced(const _polygonsF &shape)
 {
+    auto paint = [&](const QPoint &a, const QPoint &b) {
+        painter.drawLine(a, b);
+        return b;
+    };
 
+    for (const auto &polyg : shape)
+        std::accumulate(std::next(polyg.begin()), polyg.end(),
+                        polyg.front(),
+                        paint);
 }
 
 /* ------------------ Figure operations------------------ */
