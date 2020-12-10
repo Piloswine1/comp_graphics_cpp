@@ -13,7 +13,8 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 
-typedef QVector<QVector<int>> _dataPolyg;
+typedef QVector<int> _dataOnePolyg;
+typedef QVector<_dataOnePolyg> _dataPolyg;
 typedef QVector<QVector3D> _dataPoints;
 
 class Frame : public QWidget
@@ -67,8 +68,6 @@ protected:
 
 
 private:
-    QString pathPolygons;
-    QString pathPoints;
     QPainter painter;
 
     int optionDraw = 0;
@@ -117,6 +116,9 @@ private:
     void fillPolygon(int, QVector<intCoord>&);
     void customLine(int, intCoord&, intCoord&, QMap<int, QVector<intCoord>>&);
     void addInBuffFrame(int, int, int);
+
+    void reduce_polygons(_dataPolyg*, _dataPoints*);
+    void draw_reduced(const _dataPolyg&, const _dataPoints&);
 };
 
 #endif // FRAME_H

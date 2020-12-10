@@ -87,13 +87,18 @@ void Frame::drawFigureZBuffer()
 
 void Frame::drawFigureVeyler()
 {
-    drawFigureZBuffer(); // Cheating, don't pay attention :)
+    _dataPolyg tmpdataPolygons;
+    _dataPoints tmpdataPoints;
+    reduce_polygons(&tmpdataPolygons, &tmpdataPoints);
+    draw_reduced(tmpdataPolygons, tmpdataPoints);
 }
 
 void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
 {
     QMap<int, QVector<intCoord>> boundMap;
-    for (int i = 0; i < points.size() - 1; customLine(idSegment, points[i], points[i + 1], boundMap), i++);
+    for (int i = 0; i < points.size() - 1; i++)
+        customLine(idSegment, points[i], points[i + 1], boundMap);
+
     customLine(idSegment, points.last(), points[0], boundMap);
 
     int distance = sqrt(pow((lightCoord.x - 250), 2) + pow((lightCoord.y - 250), 2) + pow(lightCoord.z, 2));
@@ -199,6 +204,45 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
             y += signY;
         }
     }
+}
+
+void Frame::reduce_polygons(_dataPolyg *, _dataPoints *)
+{
+    // sort polygons
+    auto onePolygComp = [&](const int a, const int b) { return dataPoints[a].z() < dataPoints[b].z(); };
+    auto polygSort = [&](const _dataOnePolyg &a, const _dataOnePolyg &b){
+        const auto min_a = std::min(a.begin(), a.end(), onePolygComp);
+        const auto min_b = std::min(b.begin(), b.end(), onePolygComp);
+        return *min_a < *min_b;
+    };
+
+    _dataPolyg sorted(dataPolygons);
+    std::sort(sorted.begin(), sorted.end(), polygSort);
+
+    //
+    const auto first = sorted.front();
+    sorted.pop_front();
+
+    _dataPolyg front,
+               back;
+
+    for (const auto &polyg : sorted)
+        Q_UNUSED(polyg)
+//        отсечь как то надо, бляя тут сложн
+//        if (isFront)
+//            front.push_back(polyg);
+//        else
+//            back.push_back(polyg);
+
+    _dataPolyg toReduce;
+    const auto max = std::max(first.begin(), first.end(), onePolygComp);
+    for (const auto &polyg : back)
+        for (const auto &point : polyg)
+            if (dataPoints[point].z() < *max)
+                toReduce.push_back(polyg);
+
+    if (!toReduce.empty())
+        QDebug(QtMsgType::QtFatalMsg)<<"Пока хз че с этим делать!";
 }
 
 /* ------------------ Figure operations------------------ */
