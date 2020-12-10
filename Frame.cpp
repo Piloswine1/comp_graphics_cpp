@@ -2,13 +2,11 @@
 
 Frame::Frame(QWidget *parent) : QWidget(parent)
 {
-    QPen pen(Qt::black, 1, Qt::DashLine, Qt::SquareCap, Qt::RoundJoin);
-    painter.setPen(pen);
     screen = QImage(sizeCanvas - 1, sizeCanvas - 1, QImage::Format_ARGB32);
     // Light pos
-    lightCoord.x = 200;
-    lightCoord.y = 300;
-    lightCoord.x = 50;
+    lightCoord.x = 250;
+    lightCoord.y = 250;
+    lightCoord.z = 100;
 }
 
 /* ------------------ Draw Figure ------------------ */
@@ -17,6 +15,8 @@ void Frame::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     painter.begin(this);
+    QPen pen(Qt::black, 1);
+    painter.setPen(pen);
     switch(optionDraw)
     {
         case 0:
@@ -87,10 +87,11 @@ void Frame::drawFigureZBuffer()
 
 void Frame::drawFigureVeyler()
 {
-    _dataPolyg tmpdataPolygons;
-    _dataPoints tmpdataPoints;
-    reduce_polygons(&tmpdataPolygons, &tmpdataPoints);
-    draw_reduced(tmpdataPolygons, tmpdataPoints);
+//    _dataPolyg tmpdataPolygons;
+//    _dataPoints tmpdataPoints;
+//    reduce_polygons(&tmpdataPolygons, &tmpdataPoints);
+//    draw_reduced(tmpdataPolygons, tmpdataPoints);
+    drawFigureZBuffer();
 }
 
 void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
@@ -124,8 +125,8 @@ void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
                     {
                         case 1:
                             optionFill ?
-                                screen.setPixelColor(key, i, QColor(0, 20, 255, alpha)):
-                                screen.setPixelColor(key, i, 4294967295);
+                                screen.setPixelColor(key, i, QColor(155, 155, 155, alpha)):
+                                screen.setPixelColor(key, i, QColor(90, 90, 90));
                             break;
                         case 2:
                             optionFill ?
@@ -209,7 +210,7 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 void Frame::reduce_polygons(_dataPolyg *, _dataPoints *)
 {
     // sort polygons
-    auto onePolygComp = [&](const int a, const int b) { return dataPoints[a].z() < dataPoints[b].z(); };
+    auto onePolygComp = [&](const int* const& a, const int* const& b) { return dataPoints[*a].z() < dataPoints[*b].z(); };
     auto polygSort = [&](const _dataOnePolyg &a, const _dataOnePolyg &b){
         const auto min_a = std::min(a.begin(), a.end(), onePolygComp);
         const auto min_b = std::min(b.begin(), b.end(), onePolygComp);
@@ -243,6 +244,11 @@ void Frame::reduce_polygons(_dataPolyg *, _dataPoints *)
 
     if (!toReduce.empty())
         QDebug(QtMsgType::QtFatalMsg)<<"Пока хз че с этим делать!";
+}
+
+void Frame::draw_reduced(const _dataPolyg &, const _dataPoints &)
+{
+
 }
 
 /* ------------------ Figure operations------------------ */
