@@ -95,11 +95,18 @@ private:
 
     struct coord{
         double x, y, z;
+        QColor clr = {"black"};
+        coord(const QVector3D &point):
+            x(point.x()),
+            y(point.y()),
+            z(point.z())
+        {}
+        bool operator==(const coord &a) const {return x==a.x && y==a.y && z==a.z;}
     };
 
     typedef QVector<QVector<coord>> _polygonsF;
 
-    coord lightCoord;
+    coord lightCoord = QVector3D{250, 250, 100};
 
     _dataPolyg dataPolygons;
     _dataPoints dataPoints;
@@ -119,7 +126,12 @@ private:
     void customLine(int, intCoord&, intCoord&, QMap<int, QVector<intCoord>>&);
     void addInBuffFrame(int, int, int);
 
-    _polygonsF reduce_polygons();
+    int orientation(const coord &p, const coord &q, const coord &r);
+    bool onSegment(const coord &p, const coord &q, const coord &r);
+    bool doIntersect(const coord &p1, const coord &q1, const coord &p2, const coord &q2);
+
+    _polygonsF prepare_polygons();
+    _polygonsF reduce_polygons(_polygonsF);
     void draw_reduced(const _polygonsF&);
 };
 

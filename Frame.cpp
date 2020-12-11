@@ -3,10 +3,6 @@
 Frame::Frame(QWidget *parent) : QWidget(parent)
 {
     screen = QImage(sizeCanvas - 1, sizeCanvas - 1, QImage::Format_ARGB32);
-    // Light pos
-    lightCoord.x = 250;
-    lightCoord.y = 250;
-    lightCoord.z = 100;
 }
 
 /* ------------------ Draw Figure ------------------ */
@@ -15,8 +11,7 @@ void Frame::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     painter.begin(this);
-    QPen pen(Qt::black, 1);
-    painter.setPen(pen);
+    painter.setPen({Qt::black, 2});
     switch(optionDraw)
     {
         case 0:
@@ -87,9 +82,10 @@ void Frame::drawFigureZBuffer()
 
 void Frame::drawFigureVeyler()
 {
-//    const auto toDraw = reduce_polygons();
-//    draw_reduced(toDraw);
-    drawFigureZBuffer();
+    const auto prepared = prepare_polygons();
+    const auto toDraw = reduce_polygons(prepared);
+    draw_reduced(toDraw);
+//    drawFigureZBuffer();
 }
 
 void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
@@ -124,7 +120,7 @@ void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
                         case 1:
                             optionFill ?
                                 screen.setPixelColor(key, i, QColor(155, 155, 155, alpha)):
-                                screen.setPixelColor(key, i, QColor(90, 90, 90));
+                                screen.setPixelColor(key, i, 4294967295);
                             break;
                         case 2:
                             optionFill ?
@@ -205,62 +201,136 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-Frame::_polygonsF Frame::reduce_polygons()
+int Frame::orientation(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
+{
+    int val = (q.y - p.y) * (r.x - q.x) -
+              (q.x - p.x) * (r.y - q.y);
+
+    if (val == 0) return 0;  // colinear
+
+    return (val > 0)? 1: 2; // clock or counterclock wise
+}
+
+bool Frame::onSegment(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
+{
+    if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
+        q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
+       return true;
+
+    return false;
+}
+
+bool Frame::doIntersect(const Frame::coord &p1, const Frame::coord &q1, const Frame::coord &p2, const Frame::coord &q2)
+{
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+
+    // General case
+    if (o1 != o2 && o3 != o4)
+        return true;
+
+    // Special Cases
+    // p1, q1 and p2 are colinear and p2 lies on segment p1q1
+    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+
+    // p1, q1 and q2 are colinear and q2 lies on segment p1q1
+    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+
+    // p2, q2 and p1 are colinear and p1 lies on segment p2q2
+    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+
+     // p2, q2 and q1 are colinear and q1 lies on segment p2q2
+    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+    return false; // Doesn't fall in any of the above cases
+}
+
+Frame::_polygonsF Frame::prepare_polygons()
+{
+    _polygonsF retval;
+    for (const auto &polygon : dataPolygons) {
+        QVector<Frame::coord> temp;
+        for (const auto &point: polygon)
+            temp.push_back({dataPoints[point]});
+        retval.push_back(temp);
+    }
+    return retval;
+}
+
+Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
 {
     // сортирууем палигончики
-    auto onePolygComp = [&](const int* const& a, const int* const& b) { return dataPoints[*a].z() < dataPoints[*b].z(); };
-    auto polygonsFComp = [&](const Frame::coord &a, const Frame::coord &b) { return a.z < b.z; };
-    auto polygSort = [&](const _dataOnePolyg &a, const _dataOnePolyg &b){
-        const auto min_a = std::min(a.begin(), a.end(), onePolygComp);
-        const auto min_b = std::min(b.begin(), b.end(), onePolygComp);
-        return *min_a < *min_b;
+    auto polygonsFComp = [&](const auto &a, const auto &b) { return a.z < b.z; };
+    auto polygSort = [&](const auto &a, const auto &b){
+        const auto min_a = std::min_element(a.begin(), a.end(), polygonsFComp);
+        const auto min_b = std::min_element(b.begin(), b.end(), polygonsFComp);
+        return min_a->z < min_b->z;
     };
 
-    _dataPolyg sorted(dataPolygons);
-    std::sort(sorted.begin(), sorted.end(), polygSort);
+    std::sort(polygons.begin(), polygons.end(), polygSort);
+    const auto first = polygons.last(); polygons.pop_back();
 
-    const auto first = sorted.front(); sorted.pop_front();
+    auto test_line = [&](const auto &toTest) -> bool {
+        // heeelp
+        int times = 1;
+        bool isDot = false;
 
-    // вот тут надо порезать полигоны
-    _polygonsF front,
-               back;
-    while(!sorted.empty()) {
-        const auto polyg = sorted.front(); sorted.pop_front();
+        auto check = [&](const auto &a, const auto &b) {
+            if (shootPos == a ||
+                shootPos == b)
+                return b;
+            if (doIntersect(startPos, shootPos, a, b)){
+                times += 1;
+            }
+            return b;
+        };
+        std::accumulate(std::next(toTest.cbegin()), toTest.cend(),
+                        toTest.first(),
+                        check);
+        return times % 2;
+    };
 
+    _polygonsF front{first}, back;
+    for (const auto &polygon : polygons)
+        if (!test_line(polygon))
+            front.push_back(polygon);
+        else
+            back.push_back(polygon);
 
-
-        Q_UNUSED(polyg)
+    const auto closest_point_it = std::min_element(first.begin(), first.end(), polygonsFComp);
+    const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
+        const auto min = std::min_element(polyg.begin(), polyg.end(), polygonsFComp);
+        return min->z < closest_point_it->z;
+    });
+    if (closer_at_back != back.end()){
+        // на самом деле нужно типо работать с этим полигоном, но я хз
+        qDebug()<<"Пока хз че с этим делать!\n"<<front.size();
+//        for (auto &point: *closer_at_back)
+//            point.clr = "red";
+//        front.push_back(*closer_at_back);
     }
-
-    // TODO: бля как нитть находить шо сзади...
-    auto find_behind = [](){};
-
-    // удалить все закрывающие
-    for (const auto &polyg : front) {
-        const auto behind = std::find(back.begin(), back.end(), find_behind);
-        const auto behind_min = std::min(behind->begin(), behind->end(), polygonsFComp);
-        const auto polyg_max = std::max(polyg.begin(), polyg.end(), polygonsFComp);
-        if (behind_min->z > polyg_max->z)
-            back.erase(behind);
-    }
-
-    if (!back.empty())
-        QDebug(QtMsgType::QtFatalMsg)<<"Пока хз че с этим делать!\n"<<back;
 
     return front;
 }
 
 void Frame::draw_reduced(const _polygonsF &shape)
 {
-    auto paint = [&](const QPoint &a, const QPoint &b) {
-        painter.drawLine(a, b);
+    auto paint = [&](const auto &a, const auto &b) {
+        painter.setPen({a.clr, 2});
+        painter.drawLine(
+            QPointF{a.x, a.y} + QPointF{250, 250},
+            QPointF{b.x, b.y} + QPointF{250, 250}
+        );
         return b;
     };
-
-    for (const auto &polyg : shape)
+    for (const auto &polyg : shape) {
         std::accumulate(std::next(polyg.begin()), polyg.end(),
                         polyg.front(),
                         paint);
+        paint(polyg.front(), polyg.back());
+    }
 }
 
 /* ------------------ Figure operations------------------ */
