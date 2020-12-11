@@ -201,50 +201,36 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-int Frame::orientation(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
+//int Frame::orientation(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
+//{
+//    int val = (q.y - p.y) * (r.x - q.x) -
+//              (q.x - p.x) * (r.y - q.y);
+
+//    if (val == 0) return 0;  // colinear
+
+//    return (val > 0)? 1: 2; // clock or counterclock wise
+//}
+
+//bool Frame::onSegment(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
+//{
+//    if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
+//        q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
+//       return true;
+
+//    return false;
+//}
+
+bool Frame::doIntersect(const Frame::coord &o, const Frame::coord &d, const Frame::coord &a, const Frame::coord &b)
 {
-    int val = (q.y - p.y) * (r.x - q.x) -
-              (q.x - p.x) * (r.y - q.y);
+    Frame::coord ortho{-d.y, d.x, 0};
+    Frame::coord aToO = o - a;
+    Frame::coord aToB = b - a;
 
-    if (val == 0) return 0;  // colinear
+    float denom = dot( aToB, ortho );
+    float t1 = aToB.x * aToO.y - aToO.x * aToB.y / denom;
+    float t2 = dot( aToO, ortho ) / denom;
 
-    return (val > 0)? 1: 2; // clock or counterclock wise
-}
-
-bool Frame::onSegment(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
-{
-    if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
-        q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
-       return true;
-
-    return false;
-}
-
-bool Frame::doIntersect(const Frame::coord &p1, const Frame::coord &q1, const Frame::coord &p2, const Frame::coord &q2)
-{
-    int o1 = orientation(p1, q1, p2);
-    int o2 = orientation(p1, q1, q2);
-    int o3 = orientation(p2, q2, p1);
-    int o4 = orientation(p2, q2, q1);
-
-    // General case
-    if (o1 != o2 && o3 != o4)
-        return true;
-
-    // Special Cases
-    // p1, q1 and p2 are colinear and p2 lies on segment p1q1
-    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
-
-    // p1, q1 and q2 are colinear and q2 lies on segment p1q1
-    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
-
-    // p2, q2 and p1 are colinear and p1 lies on segment p2q2
-    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
-
-     // p2, q2 and q1 are colinear and q1 lies on segment p2q2
-    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
-
-    return false; // Doesn't fall in any of the above cases
+    return t2 >= 0 && t2 <= 1 && t1 >= 0;
 }
 
 Frame::_polygonsF Frame::prepare_polygons()
@@ -262,46 +248,26 @@ Frame::_polygonsF Frame::prepare_polygons()
 Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
 {
     // сортирууем палигончики
-    auto polygonsFComp = [&](const auto &a, const auto &b) { return a.z < b.z; };
+    auto polygonsFCompz = [&](const auto &a, const auto &b) { return a.z < b.z; };
     auto polygSort = [&](const auto &a, const auto &b){
-        const auto min_a = std::min_element(a.begin(), a.end(), polygonsFComp);
-        const auto min_b = std::min_element(b.begin(), b.end(), polygonsFComp);
+        const auto min_a = std::min_element(a.begin(), a.end(), polygonsFCompz);
+        const auto min_b = std::min_element(b.begin(), b.end(), polygonsFCompz);
         return min_a->z < min_b->z;
     };
 
     std::sort(polygons.begin(), polygons.end(), polygSort);
     const auto first = polygons.last(); polygons.pop_back();
 
-    auto test_line = [&](const auto &toTest) -> bool {
-        // heeelp
-        int times = 1;
-        bool isDot = false;
-
-        auto check = [&](const auto &a, const auto &b) {
-            if (shootPos == a ||
-                shootPos == b)
-                return b;
-            if (doIntersect(startPos, shootPos, a, b)){
-                times += 1;
-            }
-            return b;
-        };
-        std::accumulate(std::next(toTest.cbegin()), toTest.cend(),
-                        toTest.first(),
-                        check);
-        return times % 2;
-    };
-
     _polygonsF front{first}, back;
     for (const auto &polygon : polygons)
-        if (!test_line(polygon))
+        if (!test_plygon(first, polygon))
             front.push_back(polygon);
         else
             back.push_back(polygon);
 
-    const auto closest_point_it = std::min_element(first.begin(), first.end(), polygonsFComp);
+    const auto closest_point_it = std::min_element(first.begin(), first.end(), polygonsFCompz);
     const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
-        const auto min = std::min_element(polyg.begin(), polyg.end(), polygonsFComp);
+        const auto min = std::min_element(polyg.begin(), polyg.end(), polygonsFCompz);
         return min->z < closest_point_it->z;
     });
     if (closer_at_back != back.end()){

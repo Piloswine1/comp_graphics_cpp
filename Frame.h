@@ -96,15 +96,23 @@ private:
     struct coord{
         double x, y, z;
         QColor clr = {"black"};
+        coord(double _x, double _y, double _z):
+            x(_x), y(_y), z(_z)
+        {}
         coord(const QVector3D &point):
             x(point.x()),
             y(point.y()),
             z(point.z())
         {}
         bool operator==(const coord &a) const {return x==a.x && y==a.y && z==a.z;}
+        coord operator-(const coord &a) const {return {x-a.x, y-a.y, z-a.z};}
+        coord operator+(const coord &a) const {return {x+a.x, y+a.y, z+a.z};}
+        coord operator*(float t) {return {t*x, t*y, t*z};}
     };
 
-    typedef QVector<QVector<coord>> _polygonsF;
+
+    typedef QVector<coord> _onePolygonsF;
+    typedef QVector<_onePolygonsF> _polygonsF;
 
     coord lightCoord = QVector3D{250, 250, 100};
 
@@ -126,9 +134,61 @@ private:
     void customLine(int, intCoord&, intCoord&, QMap<int, QVector<intCoord>>&);
     void addInBuffFrame(int, int, int);
 
-    int orientation(const coord &p, const coord &q, const coord &r);
-    bool onSegment(const coord &p, const coord &q, const coord &r);
-    bool doIntersect(const coord &p1, const coord &q1, const coord &p2, const coord &q2);
+    template<class T>
+    float static dot(const T &a, const T &b) { return std::fabs(a.x - b.y) + (b.x - a.y); }
+    template<class T>
+    float static distance(const T &a, const T &b) { return std::sqrt(std::pow((b.x - a.x), 2) - std::pow((b.y - a.y), 2)); }
+    template<class T>
+    float static length_squared(const T &a, const T &b) { return std::fabs(std::pow((b.x - a.x), 2) - std::pow((b.y - a.y), 2));}
+
+    float minimum_distance(const coord &_v, const coord &_w, const coord &_p) {
+      // Return minimum distance between line segment vw and point p
+      const float l2 = length_squared(_v, _w);  // i.e. |_w-_v|^2 -  avoid a sqrt
+      if (l2 == 0.0) return distance(_p, _v);   // _v == __w case
+      // Consider the line extending the segment, parameterized as _v + t (_w - _v).
+      // _we find projection of point p onto the line.
+      // It falls _where t = [(p-_v) . (_w-_v)] / |_w-_v|^2
+      // _we clamp t from [0,1] to handle points outside the segment _v_w.
+      const float t = std::max(0.f, std::min(1.f, dot(_p - _v, _w - _v) / l2));
+      const coord proj = _v + (_w - _v) *  t;  // Projection falls on the segment
+      return distance(_p, proj);
+    }
+
+    template<class T>
+    bool test_plygon(const T &first, const T &toTest) {
+        const auto [v, w] = getRect(toTest);
+        auto test_closest = [&, &_v = v, &_w = v](const auto &a, const auto &b) {
+            return minimum_distance(_v, _w, a) < minimum_distance(_v, _w, b);
+        };
+        const auto startPos = *std::min_element(first.begin(), first.end(), test_closest);
+        const auto shootPos = coord{v.x + w.x / 2.f, v.y + w.y / 2.f, 0};
+        int times = 0;
+
+        auto check = [&](const auto &a, const auto &b) {
+            if (shootPos == a ||
+                shootPos == b)
+                return b;
+            if (doIntersect(startPos, shootPos, a, b)) {
+                times += 1;
+            }
+            return b;
+        };
+        std::accumulate(std::next(toTest.cbegin()), toTest.cend(),
+                        toTest.first(),
+                        check);
+        return times % 2;
+    };
+
+    std::pair<coord, coord> getRect(const _onePolygonsF &polyg)
+    {
+        auto polygonsFCompx = [](const auto &a, const auto &b) { return a.x < b.x; };
+        auto polygonsFCompy = [](const auto &a, const auto &b) { return a.y < b.y; };
+        const auto [minx, maxx] = std::minmax_element(polyg.begin(), polyg.end(), polygonsFCompx);
+        const auto [miny, maxy] = std::minmax_element(polyg.begin(), polyg.end(), polygonsFCompy);
+        return {{minx->x, maxy->y, 0}, {maxx->x, miny->y, 0}};
+    }
+
+    bool doIntersect(const coord &, const coord &, const coord &, const coord &);
 
     _polygonsF prepare_polygons();
     _polygonsF reduce_polygons(_polygonsF);
