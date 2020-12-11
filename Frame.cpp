@@ -220,19 +220,6 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 //    return false;
 //}
 
-bool Frame::doIntersect(const Frame::coord &o, const Frame::coord &d, const Frame::coord &a, const Frame::coord &b)
-{
-    Frame::coord ortho{-d.y, d.x, 0};
-    Frame::coord aToO = o - a;
-    Frame::coord aToB = b - a;
-
-    float denom = dot( aToB, ortho );
-    float t1 = aToB.x * aToO.y - aToO.x * aToB.y / denom;
-    float t2 = dot( aToO, ortho ) / denom;
-
-    return t2 >= 0 && t2 <= 1 && t1 >= 0;
-}
-
 Frame::_polygonsF Frame::prepare_polygons()
 {
     _polygonsF retval;
@@ -265,10 +252,10 @@ Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
         else
             back.push_back(polygon);
 
-    const auto closest_point_it = std::min_element(first.begin(), first.end(), polygonsFCompz);
+    const auto farest_point_it = std::max_element(first.begin(), first.end(), polygonsFCompz);
     const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
         const auto min = std::min_element(polyg.begin(), polyg.end(), polygonsFCompz);
-        return min->z < closest_point_it->z;
+        return min->z < farest_point_it->z;
     });
     if (closer_at_back != back.end()){
         // на самом деле нужно типо работать с этим полигоном, но я хз

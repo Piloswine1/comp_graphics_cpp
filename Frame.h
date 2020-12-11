@@ -162,7 +162,7 @@ private:
         };
         const auto startPos = *std::min_element(first.begin(), first.end(), test_closest);
         const auto shootPos = coord{v.x + w.x / 2.f, v.y + w.y / 2.f, 0};
-        int times = 0;
+        int times = 1;
 
         auto check = [&](const auto &a, const auto &b) {
             if (shootPos == a ||
@@ -188,7 +188,19 @@ private:
         return {{minx->x, maxy->y, 0}, {maxx->x, miny->y, 0}};
     }
 
-    bool doIntersect(const coord &, const coord &, const coord &, const coord &);
+
+    bool doIntersect(const Frame::coord &o, const Frame::coord &d, const Frame::coord &a, const Frame::coord &b)
+    {
+        Frame::coord ortho{-d.y, d.x, 0};
+        Frame::coord aToO = o - a;
+        Frame::coord aToB = b - a;
+
+        float denom = dot( aToB, ortho );
+        float t1 = aToB.x * aToO.y - aToO.x * aToB.y / denom;
+        float t2 = dot( aToO, ortho ) / denom;
+
+        return t2 >= 0 && t2 <= 1 && t1 >= 0;
+    }
 
     _polygonsF prepare_polygons();
     _polygonsF reduce_polygons(_polygonsF);
