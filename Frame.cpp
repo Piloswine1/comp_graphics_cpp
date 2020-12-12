@@ -82,10 +82,10 @@ void Frame::drawFigureZBuffer()
 
 void Frame::drawFigureVeyler()
 {
-    const auto prepared = prepare_polygons();
-    const auto toDraw = reduce_polygons(prepared);
-    draw_reduced(toDraw);
-//    drawFigureZBuffer();
+//    const auto prepared = prepare_polygons();
+//    const auto toDraw = reduce_polygons(prepared);
+//    draw_reduced(toDraw);
+    drawFigureZBuffer();
 }
 
 void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
@@ -201,91 +201,91 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-Frame::_polygonsF Frame::prepare_polygons()
-{
-    _polygonsF retval;
-    for (const auto &polygon : dataPolygons) {
-        QVector<Frame::coord> temp;
-        for (const auto &point: polygon)
-            temp.push_back({dataPoints[point]});
-        retval.push_back(temp);
-    }
-    return retval;
-}
+//Frame::_polygonsF Frame::prepare_polygons()
+//{
+//    _polygonsF retval;
+//    for (const auto &polygon : dataPolygons) {
+//        QVector<Frame::coord> temp;
+//        for (const auto &point: polygon)
+//            temp.push_back({dataPoints[point]});
+//        retval.push_back(temp);
+//    }
+//    return retval;
+//}
 
-Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
-{
-    // сортирууем палигончики
-    auto polygSort = [](const auto &a, const auto &b){
-        auto sumF = [](const auto &a, const auto &b) { return a + b.z; };
-        const auto sum_a = std::accumulate(std::next(a.begin()), a.end(), a.front().z, sumF);
-        const auto sum_b = std::accumulate(std::next(b.begin()), b.end(), b.front().z, sumF);
-        return sum_a < sum_b;
-    };
+//Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
+//{
+//    // сортирууем палигончики
+//    auto polygSort = [](const auto &a, const auto &b){
+//        auto sumF = [](const auto &a, const auto &b) { return a + b.z; };
+//        const auto sum_a = std::accumulate(std::next(a.begin()), a.end(), a.front().z, sumF);
+//        const auto sum_b = std::accumulate(std::next(b.begin()), b.end(), b.front().z, sumF);
+//        return sum_a < sum_b;
+//    };
 
-    std::sort(polygons.begin(), polygons.end(), polygSort);
-    const auto first = polygons.last(); polygons.pop_back();
-    return reduce_polygons_sub(first, polygons);
-}
+//    std::sort(polygons.begin(), polygons.end(), polygSort);
+//    const auto first = polygons.last(); polygons.pop_back();
+//    return reduce_polygons_sub(first, polygons);
+//}
 
-Frame::_polygonsF Frame::reduce_polygons_sub(const Frame::_onePolygonsF &first, const _polygonsF &polygons)
-{
-    auto polygonsFCompz = [&](const auto &a, const auto &b) { return a.z < b.z; };
+//Frame::_polygonsF Frame::reduce_polygons_sub(const Frame::_onePolygonsF &first, const _polygonsF &polygons)
+//{
+//    auto polygonsFCompz = [&](const auto &a, const auto &b) { return a.z < b.z; };
 
-    _polygonsF front, back;
-    for (const auto &polygon : polygons) {
-        const auto [_front, _back] = weiler_clip(first, polygon);
-        front.append(_front);
-        back.append(_back);
-    }
+//    _polygonsF front, back;
+//    for (const auto &polygon : polygons) {
+//        const auto [_front, _back] = weiler_clip(first, polygon);
+//        front.append(_front);
+//        back.append(_back);
+//    }
 
-    const auto farest_point_it = std::min_element(first.begin(), first.end(), polygonsFCompz);
-    const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
-        const auto min = std::max_element(polyg.begin(), polyg.end(), polygonsFCompz);
-        return min->z < farest_point_it->z;
-    });
+//    const auto farest_point_it = std::min_element(first.begin(), first.end(), polygonsFCompz);
+//    const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
+//        const auto min = std::max_element(polyg.begin(), polyg.end(), polygonsFCompz);
+//        return min->z < farest_point_it->z;
+//    });
 
-    if (closer_at_back != back.end()){
-        const auto new_first = *closer_at_back;
-        back.erase(closer_at_back);
-        return reduce_polygons_sub(new_first, front + back);
-    } else {
-        return front;
-    }
-}
+//    if (closer_at_back != back.end()){
+//        const auto new_first = *closer_at_back;
+//        back.erase(closer_at_back);
+//        return reduce_polygons_sub(new_first, front + back);
+//    } else {
+//        return front;
+//    }
+//}
 
-void Frame::draw_reduced(const _polygonsF &shape)
-{
-    auto paint = [&](const auto &a, const auto &b) {
-        painter.drawLine(
-            QPointF{a.x, a.y} + QPointF{250, 250},
-            QPointF{b.x, b.y} + QPointF{250, 250}
-        );
-        return b;
-    };
-    for (const auto &polyg : shape) {
-        std::accumulate(std::next(polyg.begin()), polyg.end(),
-                        polyg.front(),
-                        paint);
-        paint(polyg.front(), polyg.back());
-    }
-}
+//void Frame::draw_reduced(const _polygonsF &shape)
+//{
+//    auto paint = [&](const auto &a, const auto &b) {
+//        painter.drawLine(
+//            QPointF{a.x, a.y} + QPointF{250, 250},
+//            QPointF{b.x, b.y} + QPointF{250, 250}
+//        );
+//        return b;
+//    };
+//    for (const auto &polyg : shape) {
+//        std::accumulate(std::next(polyg.begin()), polyg.end(),
+//                        polyg.front(),
+//                        paint);
+//        paint(polyg.front(), polyg.back());
+//    }
+//}
 
-std::pair<Frame::_polygonsF, Frame::_polygonsF> Frame::weiler_clip(const Frame::_onePolygonsF &clipBy, const Frame::_onePolygonsF &toClip)
-{
-    _onePolygonsFWeil toFront,
-                      toBack;
-    bool isClipped = false;
-    std::for_each(toClip.cbegin(), toClip.cend(), [&]() {
+//std::pair<Frame::_polygonsF, Frame::_polygonsF> Frame::weiler_clip(const Frame::_onePolygonsF &clipBy, const Frame::_onePolygonsF &toClip)
+//{
+//    _onePolygonsFWeil toFront,
+//                      toBack;
+//    bool isClipped = false;
+//    std::for_each(toClip.cbegin(), toClip.cend(), [&]() {
 
-        Q_UNIMPLEMENTED();
+//        Q_UNIMPLEMENTED();
 
-    });
-    if (!isClipped)
-        return {{clipBy, toClip}, {}};
+//    });
+//    if (!isClipped)
+//        return {{clipBy, toClip}, {}};
 
-    return makePolygVeiler(toFront, toBack);
-}
+//    return makePolygVeiler(toFront, toBack);
+//}
 
 /* ------------------ Figure operations------------------ */
 

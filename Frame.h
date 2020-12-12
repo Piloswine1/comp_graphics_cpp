@@ -152,68 +152,80 @@ private:
     _polygonsF prepare_polygons();
     _polygonsF reduce_polygons(_polygonsF);
     _polygonsF reduce_polygons_sub(const _onePolygonsF &, const _polygonsF &);
-    std::pair<_polygonsF, _polygonsF> weiler_clip(const _onePolygonsF &, const _onePolygonsF &);
+//    std::pair<_polygonsF, _polygonsF> weiler_clip(const _onePolygonsF &, const _onePolygonsF &);
 
-    template<class T>
-    std::pair<_polygonsF, _polygonsF> makePolygVeiler(T first, T second)
-    {
-        return fill<T>(first.cbegin(), first.cend(), second.cbegin(), second.cend());
-    }
+//    template<class T>
+//    std::pair<_polygonsF, _polygonsF> makePolygVeiler(T first, T second)
+//    {
+//        return fill(first.cbegin(), first.cend(), second.cbegin(), second.cend());
+//    }
 
-    template<class It, class T>
-    std::pair<_polygonsF, _polygonsF> fill(It b1, It e1, It b2, It e2) {
-        auto walkGenerator = [&](auto first, bool firstList, const auto &vec) {
-            T tmp{*first};
-            bool foundIntersect = first->inter;
-            auto it = std::next(first);
-            while (it != first) {
-                tmp.push_back(it);
-                if (it->inter) {
-                    if (foundIntersect)
+//    template<class It>
+//    std::pair<_polygonsF, _polygonsF> fill(It b1, It e1, It b2, It e2) {
+//        typedef typename std::iterator_traits<It>::value_type T;
+//        typedef QVector<T> vecT;
 
-                } else {
-                    it = std::next(it);
-                }
-            }
-            vec->push_back(tmp);
-        };
+//        auto find_left = [&](const T &val) {return std::find(b1, e1, val);};
+//        auto find_right = [&](const T &val) {return std::find(b2, e2, val);};
 
-        auto front = std::make_shared<QVector<T>>();
-        auto genF = makeGenerator(b1, e1, front);
-        for (auto first = genF(); first != e1; first = genF())
-            walkGenerator(first);
+//        auto walkGenerator = [&](const auto &gen, const auto &ptr, bool left_pos) {
+//            for (auto gen_val = gen(); gen_val.second; gen_val = gen()) {
+//                It it = gen_val.first;
+//                vecT tmp{*it};
+//                bool prevInter = it->inter;
+//                it = std::next(it);
+//                while (it != gen_val.first) {
+//                    tmp.push_back(*it);
+//                    if (it->inter) {
+//                        if (prevInter) {
+//                            it = (left_pos)? find_right(*it) : find_left(*it);
+//                            left_pos = !left_pos;
+//                        } else {
+//                            prevInter = true;
+//                            it = std::next(it);
+//                        }
+//                    } else {
+//                        it = std::next(it);
+//                    }
+//                }
+//                ptr->push_back(tmp);
+//            }
+//        };
 
-        auto back = std::make_shared<QVector<T>>();
-        auto genB = makeGenerator(b2, e2, back);
-        for (auto first = genB(); first != e2; first = genB())
-            walkGenerator(first);
+//        auto front = std::make_shared<QVector<vecT>>();
+//        auto genF = makeGenerator(b1, e1, front);
+//        walkGenerator(genF, front, true);
 
-        return {to_polygonsF(front), to_polygonsF(back)};
-    };
+//        auto back = std::make_shared<QVector<vecT>>();
+//        auto genB = makeGenerator(b2, e2, back);
+//        walkGenerator(genB, back, false);
 
-    template<class VecShared>
-    _polygonsF static to_polygonsF(VecShared pnt)
-    {
-        _polygonsF retval;
-        for (auto it = pnt->begin(); it != pnt->end(); ++it){
-            _onePolygonsF tmp;
-            for (const auto &coord_w : *it)
-                tmp.push_back(static_cast<coord>(coord_w));
-            retval.push_back(tmp);
-        }
-        return retval;
-    }
+//        return {to_polygonsF(front), to_polygonsF(back)};
+//    };
 
-    template<class Gen, class It, class VecShared>
-    Gen makeGenerator(It a, It b, VecShared vec) {
-         It genFn = [it = a, &b, &vec, &genFn]() mutable {
-            it = std::find_if(it, b, [](const auto &val) { return val.inter;});
-            if (std::find(vec->begin(), vec->end(), *it) == vec->end() && it != b)
-                it = genFn();
-            return it;
-        };
-        return genFn;
-    };
+//    template<class VecShared>
+//    _polygonsF static to_polygonsF(VecShared pnt)
+//    {
+//        _polygonsF retval;
+//        for (auto it = pnt->begin(); it != pnt->end(); ++it){
+//            _onePolygonsF tmp;
+//            for (const auto &coord_w : *it)
+//                tmp.push_back(static_cast<coord>(coord_w));
+//            retval.push_back(tmp);
+//        }
+//        return retval;
+//    }
+
+//    template<class It, class VecShared>
+//    std::pair<It, bool> makeGenerator(It a, It b, VecShared vec) {
+//        typedef std::pair<It, bool> retval;
+//        retval genFn = [it = a, &b, &vec, &genFn]() mutable -> retval {
+//            if (std::find(vec->begin(), vec->end(), *it) == vec->end() && it != b)
+//                it = genFn().first;
+//            return {it, it != b};
+//        };
+//        return genFn;
+//    };
 
     void draw_reduced(const _polygonsF&);
 };
