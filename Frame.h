@@ -76,12 +76,13 @@ private:
     int optionFill = false;
 
     static uint const sizeCanvas = 500;
+    static uint const sizeZBuff = 3 * sizeCanvas;
 
     QPoint _p;
     QImage screen;
 
-    int    buffFrame[sizeCanvas][sizeCanvas];
-    double buffZ[sizeCanvas][sizeCanvas];
+    int    buffFrame[sizeZBuff][sizeZBuff];
+    double buffZ[sizeZBuff][sizeZBuff];
 
     double FiX = 0.07;
     double FiY = 0.07;
