@@ -201,25 +201,6 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-//int Frame::orientation(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
-//{
-//    int val = (q.y - p.y) * (r.x - q.x) -
-//              (q.x - p.x) * (r.y - q.y);
-
-//    if (val == 0) return 0;  // colinear
-
-//    return (val > 0)? 1: 2; // clock or counterclock wise
-//}
-
-//bool Frame::onSegment(const Frame::coord &p, const Frame::coord &q, const Frame::coord &r)
-//{
-//    if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
-//        q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
-//       return true;
-
-//    return false;
-//}
-
 Frame::_polygonsF Frame::prepare_polygons()
 {
     _polygonsF retval;
@@ -235,43 +216,47 @@ Frame::_polygonsF Frame::prepare_polygons()
 Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
 {
     // сортирууем палигончики
-    auto polygonsFCompz = [&](const auto &a, const auto &b) { return a.z < b.z; };
-    auto polygSort = [&](const auto &a, const auto &b){
-        const auto min_a = std::min_element(a.begin(), a.end(), polygonsFCompz);
-        const auto min_b = std::min_element(b.begin(), b.end(), polygonsFCompz);
-        return min_a->z < min_b->z;
+    auto polygSort = [](const auto &a, const auto &b){
+        auto sumF = [](const auto &a, const auto &b) { return a + b.z; };
+        const auto sum_a = std::accumulate(std::next(a.begin()), a.end(), a.front().z, sumF);
+        const auto sum_b = std::accumulate(std::next(b.begin()), b.end(), b.front().z, sumF);
+        return sum_a < sum_b;
     };
 
     std::sort(polygons.begin(), polygons.end(), polygSort);
     const auto first = polygons.last(); polygons.pop_back();
+    return reduce_polygons_sub(first, polygons);
+}
 
-    _polygonsF front{first}, back;
-    for (const auto &polygon : polygons)
-        if (!test_plygon(first, polygon))
-            front.push_back(polygon);
-        else
-            back.push_back(polygon);
+Frame::_polygonsF Frame::reduce_polygons_sub(const Frame::_onePolygonsF &first, const _polygonsF &polygons)
+{
+    auto polygonsFCompz = [&](const auto &a, const auto &b) { return a.z < b.z; };
 
-    const auto farest_point_it = std::max_element(first.begin(), first.end(), polygonsFCompz);
-    const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
-        const auto min = std::min_element(polyg.begin(), polyg.end(), polygonsFCompz);
-        return min->z < farest_point_it->z;
-    });
-    if (closer_at_back != back.end()){
-        // на самом деле нужно типо работать с этим полигоном, но я хз
-        qDebug()<<"Пока хз че с этим делать!\n"<<front.size();
-//        for (auto &point: *closer_at_back)
-//            point.clr = "red";
-//        front.push_back(*closer_at_back);
+    _polygonsF front, back;
+    for (const auto &polygon : polygons) {
+        const auto [_front, _back] = weiler_clip(first, polygon);
+        front.append(_front);
+        back.append(_back);
     }
 
-    return front;
+    const auto farest_point_it = std::min_element(first.begin(), first.end(), polygonsFCompz);
+    const auto closer_at_back = std::find_if(back.begin(), back.end(), [&](const QVector<Frame::coord> &polyg) {
+        const auto min = std::max_element(polyg.begin(), polyg.end(), polygonsFCompz);
+        return min->z < farest_point_it->z;
+    });
+
+    if (closer_at_back != back.end()){
+        const auto new_first = *closer_at_back;
+        back.erase(closer_at_back);
+        return reduce_polygons_sub(new_first, front + back);
+    } else {
+        return front;
+    }
 }
 
 void Frame::draw_reduced(const _polygonsF &shape)
 {
     auto paint = [&](const auto &a, const auto &b) {
-        painter.setPen({a.clr, 2});
         painter.drawLine(
             QPointF{a.x, a.y} + QPointF{250, 250},
             QPointF{b.x, b.y} + QPointF{250, 250}
@@ -284,6 +269,22 @@ void Frame::draw_reduced(const _polygonsF &shape)
                         paint);
         paint(polyg.front(), polyg.back());
     }
+}
+
+std::pair<Frame::_polygonsF, Frame::_polygonsF> Frame::weiler_clip(const Frame::_onePolygonsF &clipBy, const Frame::_onePolygonsF &toClip)
+{
+    _onePolygonsFWeil toFront,
+                      toBack;
+    bool isClipped = false;
+    std::for_each(toClip.cbegin(), toClip.cend(), [&]() {
+
+        Q_UNIMPLEMENTED();
+
+    });
+    if (!isClipped)
+        return {{clipBy, toClip}, {}};
+
+    return makePolygVeiler(toFront, toBack);
 }
 
 /* ------------------ Figure operations------------------ */
