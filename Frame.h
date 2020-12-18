@@ -76,13 +76,14 @@ private:
     int optionFill = false;
 
     static uint const sizeCanvas = 500;
-    static uint const sizeZBuff = 3 * sizeCanvas;
+    static uint const RESX = 3000;
+    static uint const RESY = 1900;
 
     QPoint _p;
     QImage screen;
 
-    int    buffFrame[sizeZBuff][sizeZBuff];
-    double buffZ[sizeZBuff][sizeZBuff];
+    int    buffFrame[RESX][RESY];
+    double buffZ[RESX][RESY];
 
     double FiX = 0.07;
     double FiY = 0.07;
@@ -106,6 +107,7 @@ private:
             y(point.y()),
             z(point.z())
         {}
+        QPointF toPointF() const {return {x, y};}
         bool operator==(const coord &a) const {return x==a.x && y==a.y && z==a.z;}
         coord operator-(const coord &a) const {return {x-a.x, y-a.y, z-a.z};}
         coord operator+(const coord &a) const {return {x+a.x, y+a.y, z+a.z};}
@@ -134,6 +136,7 @@ private:
 
     _dataPolyg dataPolygons;
     _dataPoints dataPoints;
+    _polygonsF dataShapes;
 
     /* --------- Functions --------- */
 
@@ -143,6 +146,8 @@ private:
     void defaultDrawFigure();
     void drawFigureZBuffer();
     void drawFigureVeyler();
+    void draw_reduced(const _polygonsF&);
+    void draw_custom();
 
     void calculate(QMatrix4x4 &);
 
@@ -150,10 +155,15 @@ private:
     void customLine(int, intCoord&, intCoord&, QMap<int, QVector<intCoord>>&);
     void addInBuffFrame(int, int, int);
 
+    bool points_covered(const coord&, const coord&);
+
     _polygonsF prepare_polygons();
+
     _polygonsF reduce_polygons(_polygonsF);
     _polygonsF reduce_polygons_sub(const _onePolygonsF &, const _polygonsF &);
-//    std::pair<_polygonsF, _polygonsF> weiler_clip(const _onePolygonsF &, const _onePolygonsF &);
+    std::pair<_polygonsF, _polygonsF> weiler_clip(const _onePolygonsF &, const _onePolygonsF &);
+
+    std::pair<coord, coord> get_rect(const _onePolygonsF &);
 
 //    template<class T>
 //    std::pair<_polygonsF, _polygonsF> makePolygVeiler(T first, T second)
@@ -217,18 +227,24 @@ private:
 //        return retval;
 //    }
 
-//    template<class It, class VecShared>
-//    std::pair<It, bool> makeGenerator(It a, It b, VecShared vec) {
-//        typedef std::pair<It, bool> retval;
-//        retval genFn = [it = a, &b, &vec, &genFn]() mutable -> retval {
-//            if (std::find(vec->begin(), vec->end(), *it) == vec->end() && it != b)
+//    template<class It, class VecShared, class FnRet = std::pair<It, bool>, class RetVal = std::function<FnRet(void)>>
+//    RetVal static makeGenerator(It a, It b, VecShared vec) {
+//        RetVal genFn = [it = a, &a, &b, &vec, &genFn]() mutable -> FnRet {
+//            if (it == b)
+//                return {it, false};
+//            it = std::find(
+//                        (it == a)? it : std::next(it),
+//                        b,
+//                        [](const auto &val) { return val.inter; }
+//            );
+//            if (std::any_of(vec->begin(), vec->end(),
+//                            [&](const auto &subVec) { return std::find(subVec.begin(), subVec.end(), *it) != subVec.end(); })
+//                    && it != b)
 //                it = genFn().first;
 //            return {it, it != b};
 //        };
 //        return genFn;
 //    };
-
-    void draw_reduced(const _polygonsF&);
 };
 
 #endif // FRAME_H

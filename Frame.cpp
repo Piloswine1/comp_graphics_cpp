@@ -51,9 +51,9 @@ void Frame::defaultDrawFigure()
 void Frame::drawFigureZBuffer()
 {
     screen.fill(QColor(Qt::white).rgb());
-    for (uint x = 0; x < sizeCanvas; x++)
+    for (uint x = 0; x < RESX; x++)
     {
-        for (uint y = 0; y < sizeCanvas; y++)
+        for (uint y = 0; y < RESY; y++)
         {
             buffFrame[x][y] = 0;
             buffZ[x][y]     = -1000;
@@ -78,6 +78,7 @@ void Frame::drawFigureZBuffer()
     }
 
     painter.drawImage(1, 1, screen);
+    draw_custom();
 }
 
 void Frame::drawFigureVeyler()
@@ -85,6 +86,7 @@ void Frame::drawFigureVeyler()
 //    const auto prepared = prepare_polygons();
 //    const auto toDraw = reduce_polygons(prepared);
 //    draw_reduced(toDraw);
+//    draw_custom();
     drawFigureZBuffer();
 }
 
@@ -201,17 +203,35 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
     }
 }
 
-//Frame::_polygonsF Frame::prepare_polygons()
-//{
-//    _polygonsF retval;
-//    for (const auto &polygon : dataPolygons) {
-//        QVector<Frame::coord> temp;
-//        for (const auto &point: polygon)
-//            temp.push_back({dataPoints[point]});
-//        retval.push_back(temp);
-//    }
-//    return retval;
-//}
+bool Frame::points_covered(const Frame::coord &pointa, const Frame::coord &pointb)
+{
+    bool a_covered = false;
+    bool b_covered = false;
+    auto check_cover = [](const auto &point, const auto &a, const auto &b) {
+        return  point.x > a.x && point.x < b.x &&
+                point.y > b.y && point.y < a.y &&
+                point.z > a.z;
+    };
+    for (const auto &polygon: dataShapes) {
+        const auto [a, b] = get_rect(polygon);
+        if (check_cover(pointa, a, b)) a_covered = true;
+        if (check_cover(pointb, a, b)) b_covered = true;
+        if (a_covered && b_covered) return true;
+    }
+    return false;
+}
+
+Frame::_polygonsF Frame::prepare_polygons()
+{
+    _polygonsF retval;
+    for (const auto &polygon : dataPolygons) {
+        QVector<Frame::coord> temp;
+        for (const auto &point: polygon)
+            temp.push_back({dataPoints[point]});
+        retval.push_back(temp);
+    }
+    return retval;
+}
 
 //Frame::_polygonsF Frame::reduce_polygons(Frame::_polygonsF polygons)
 //{
@@ -271,13 +291,46 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 //    }
 //}
 
+void Frame::draw_custom()
+{
+    auto paint = [&](const QPointF &a, const QPointF &b) {
+        painter.drawLine(a, b);
+        return b;
+    };
+
+    const auto offset = QPointF{250, 250};
+
+    for (const auto &polygon: dataShapes)
+    {
+        QVector<QPointF> points;
+
+        auto handle_line = [&](const auto a, const auto b) {
+            if (!points_covered(a, b)) {
+                points.push_back(a.toPointF() + offset);
+                points.push_back(b.toPointF() + offset);
+            }
+            return b;
+        };
+
+        std::accumulate(std::next(polygon.begin()), polygon.end(),
+                        polygon.front(),
+                        handle_line);
+        handle_line(polygon.front(), polygon.back());
+
+        std::accumulate(std::next(points.begin()), points.end(),
+                        points.front(),
+                        paint);
+    }
+}
+
 //std::pair<Frame::_polygonsF, Frame::_polygonsF> Frame::weiler_clip(const Frame::_onePolygonsF &clipBy, const Frame::_onePolygonsF &toClip)
 //{
 //    _onePolygonsFWeil toFront,
 //                      toBack;
 //    bool isClipped = false;
-//    std::for_each(toClip.cbegin(), toClip.cend(), [&]() {
+//    std::for_each(toClip.cbegin(), toClip.cend(), [&](const auto &elem) {
 
+//        Q_UNUSED(elem);
 //        Q_UNIMPLEMENTED();
 
 //    });
@@ -287,17 +340,26 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 //    return makePolygVeiler(toFront, toBack);
 //}
 
+std::pair<Frame::coord, Frame::coord> Frame::get_rect(const Frame::_onePolygonsF &vec)
+{
+    auto cmpx = [&](const auto a, const auto b) {return a.x < b.x;};
+    auto cmpy = [&](const auto a, const auto b) {return a.y < b.y;};
+    const auto [minx, maxx] = std::minmax_element(vec.begin(), vec.end(), cmpx);
+    const auto [miny, maxy] = std::minmax_element(vec.begin(), vec.end(), cmpy);
+    return {{minx->x, maxy->y, maxy->z}, {maxx->x, miny->y, miny->z}};
+}
+
 /* ------------------ Figure operations------------------ */
 
 void Frame::mouseMoveEvent(QMouseEvent *event)
 {
     if (!_p.isNull())
     {
-        if (abs(rotationX - (event->x() - int(sizeCanvas / 2))) > 5 && abs(rotationY - (event->y() - int(sizeCanvas / 2))) > 5)
+        if (abs(rotationX - (event->x() - int(RESX / 2))) > 5 && abs(rotationY - (event->y() - int(RESY / 2))) > 5)
         {
-            if (rotationX > (event->x() - int(sizeCanvas / 2)))
+            if (rotationX > (event->x() - int(RESX / 2)))
             {
-                if (rotationY > (event->y() - int(sizeCanvas / 2)))
+                if (rotationY > (event->y() - int(RESY / 2)))
                 {
                     if ( FiX > 0) FiX = -FiX;
                     rotateX(false);
@@ -312,7 +374,7 @@ void Frame::mouseMoveEvent(QMouseEvent *event)
                 }
             }else
             {
-                if (rotationY > (event->y() - int(sizeCanvas / 2)))
+                if (rotationY > (event->y() - int(RESY / 2)))
                 {
                     if ( FiX > 0) FiX = -FiX;
                     rotateX(false);
@@ -326,8 +388,8 @@ void Frame::mouseMoveEvent(QMouseEvent *event)
                     rotateY(false);
                 }
             }
-            rotationX = event->x() - int(sizeCanvas / 2);
-            rotationY = event->y() - int(sizeCanvas / 2);
+            rotationX = event->x() - int(RESX / 2);
+            rotationY = event->y() - int(RESY / 2);
         }
     }
     repaint();
@@ -505,6 +567,7 @@ bool Frame::upload(QString path)
 
     dataPoints = parsePoints(&file);
     dataPolygons = parsePolygons(&file);
+//    dataShapes = prepare_polygons();
 
     qDebug()<<"POINTS:\n"<<dataPoints;
     qDebug()<<"POLYGONS:\n"<<dataPolygons;
