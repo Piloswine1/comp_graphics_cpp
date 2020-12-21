@@ -132,7 +132,7 @@ private:
     typedef QVector<coord> _onePolygonsF;
     typedef QVector<_onePolygonsF> _polygonsF;
 
-    coord lightCoord = QVector3D{250, 250, 100};
+    coord lightCoord = QVector3D{50, 300, 0};
 
     _dataPolyg dataPolygons;
     _dataPoints dataPoints;

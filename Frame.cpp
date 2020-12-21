@@ -78,7 +78,7 @@ void Frame::drawFigureZBuffer()
     }
 
     painter.drawImage(1, 1, screen);
-    draw_custom();
+//    draw_custom();
 }
 
 void Frame::drawFigureVeyler()
@@ -95,7 +95,6 @@ void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
     QMap<int, QVector<intCoord>> boundMap;
     for (int i = 0; i < points.size() - 1; i++)
         customLine(idSegment, points[i], points[i + 1], boundMap);
-
     customLine(idSegment, points.last(), points[0], boundMap);
 
     int distance = sqrt(pow((lightCoord.x - 250), 2) + pow((lightCoord.y - 250), 2) + pow(lightCoord.z, 2));
@@ -164,8 +163,10 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 
         if (tmp >= buffZ[x][y])
         {
-            buffFrame[x][y] = idSegment;
-            screen.setPixelColor(x, y, 4278190080); // Black
+            if (!optionFill) {
+                buffFrame[x][y] = idSegment;
+                screen.setPixelColor(x, y, 4278190080); // Black
+            }
             buffZ[x][y] = tmp;
         }
 
@@ -293,34 +294,34 @@ Frame::_polygonsF Frame::prepare_polygons()
 
 void Frame::draw_custom()
 {
-    auto paint = [&](const QPointF &a, const QPointF &b) {
-        painter.drawLine(a, b);
-        return b;
-    };
+//    auto paint = [&](const QPointF &a, const QPointF &b) {
+//        painter.drawLine(a, b);
+//        return b;
+//    };
 
-    const auto offset = QPointF{250, 250};
+//    const auto offset = QPointF{250, 250};
 
-    for (const auto &polygon: dataShapes)
-    {
-        QVector<QPointF> points;
+//    for (const auto &polygon: dataShapes)
+//    {
+//        QVector<QPointF> points;
 
-        auto handle_line = [&](const auto a, const auto b) {
-            if (!points_covered(a, b)) {
-                points.push_back(a.toPointF() + offset);
-                points.push_back(b.toPointF() + offset);
-            }
-            return b;
-        };
+//        auto handle_line = [&](const auto a, const auto b) {
+//            if (!points_covered(a, b)) {
+//                points.push_back(a.toPointF() + offset);
+//                points.push_back(b.toPointF() + offset);
+//            }
+//            return b;
+//        };
 
-        std::accumulate(std::next(polygon.begin()), polygon.end(),
-                        polygon.front(),
-                        handle_line);
-        handle_line(polygon.front(), polygon.back());
+//        std::accumulate(std::next(polygon.begin()), polygon.end(),
+//                        polygon.front(),
+//                        handle_line);
+//        handle_line(polygon.front(), polygon.back());
 
-        std::accumulate(std::next(points.begin()), points.end(),
-                        points.front(),
-                        paint);
-    }
+//        std::accumulate(std::next(points.begin()), points.end(),
+//                        points.front(),
+//                        paint);
+//    }
 }
 
 //std::pair<Frame::_polygonsF, Frame::_polygonsF> Frame::weiler_clip(const Frame::_onePolygonsF &clipBy, const Frame::_onePolygonsF &toClip)
@@ -548,6 +549,7 @@ void Frame::calculate(QMatrix4x4 &R)
 
     for (int i = 0; i < dataPoints.size(); i++)
         dataPoints[i] = R * dataPoints[i];
+    dataShapes = prepare_polygons();
 }
 
 
@@ -567,7 +569,7 @@ bool Frame::upload(QString path)
 
     dataPoints = parsePoints(&file);
     dataPolygons = parsePolygons(&file);
-//    dataShapes = prepare_polygons();
+    dataShapes = prepare_polygons();
 
     qDebug()<<"POINTS:\n"<<dataPoints;
     qDebug()<<"POLYGONS:\n"<<dataPolygons;
