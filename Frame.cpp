@@ -119,7 +119,7 @@ void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
                     {
                         case 1:
                             optionFill ?
-                                screen.setPixelColor(key, i, QColor(0, 20, 255, alpha)):
+                                screen.setPixelColor(key, i, QColor(155, 155, 155, alpha)):
                                 screen.setPixelColor(key, i, 4294967295);
                             break;
                         case 2:
