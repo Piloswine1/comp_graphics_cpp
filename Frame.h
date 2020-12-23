@@ -12,6 +12,7 @@
 #include <QMatrix>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <functional>
 
 #include <memory>
 
@@ -72,7 +73,7 @@ protected:
 private:
     QPainter painter;
 
-    int optionDraw = 0;
+    int optionDraw = -1;
     int optionFill = false;
 
     static uint const sizeCanvas = 500;
@@ -99,6 +100,7 @@ private:
 
     struct coord{
         double x, y, z;
+        coord();
         coord(double _x, double _y, double _z):
             x(_x), y(_y), z(_z)
         {}
@@ -118,6 +120,7 @@ private:
     struct coord_weiler : public coord {
         COORD_STAT stat;
         bool inter;
+        coord_weiler(const coord &c): coord(c) {};
         coord_weiler(const coord &c, COORD_STAT _stat, bool _inter):
             coord(c), stat(_stat), inter(_inter)
         {}
@@ -145,6 +148,12 @@ private:
 
     void defaultDrawFigure();
     void drawFigureZBuffer();
+    void draw_fn() {
+        optionDraw < 0 ? defaultDrawFigure() :
+        optionDraw < 2 ? drawFigureZBuffer() :
+        optionDraw < 4 ? drawFigureVeyler()  :
+        throw std::range_error("wrong OptionDraw");
+    };
     void drawFigureVeyler();
     void draw_reduced(const _polygonsF&);
     void draw_custom();
@@ -157,6 +166,8 @@ private:
 
     bool points_covered(const coord&, const coord&);
 
+    std::pair<bool, Frame::coord_weiler> add_path(const Frame::coord &c) {return {false, c};};
+
     _polygonsF prepare_polygons();
 
     _polygonsF reduce_polygons(_polygonsF);
@@ -165,86 +176,86 @@ private:
 
     std::pair<coord, coord> get_rect(const _onePolygonsF &);
 
-//    template<class T>
-//    std::pair<_polygonsF, _polygonsF> makePolygVeiler(T first, T second)
-//    {
-//        return fill(first.cbegin(), first.cend(), second.cbegin(), second.cend());
-//    }
+    template<class T>
+    std::pair<_polygonsF, _polygonsF> makePolygVeiler(T first, T second)
+    {
+        return fill(first.cbegin(), first.cend(), second.cbegin(), second.cend());
+    }
 
-//    template<class It>
-//    std::pair<_polygonsF, _polygonsF> fill(It b1, It e1, It b2, It e2) {
-//        typedef typename std::iterator_traits<It>::value_type T;
-//        typedef QVector<T> vecT;
+    template<class It>
+    std::pair<_polygonsF, _polygonsF> fill(It b1, It e1, It b2, It e2) {
+        typedef typename std::iterator_traits<It>::value_type T;
+        typedef QVector<T> vecT;
 
-//        auto find_left = [&](const T &val) {return std::find(b1, e1, val);};
-//        auto find_right = [&](const T &val) {return std::find(b2, e2, val);};
+        auto find_left = [&](const T &val) {return std::find(b1, e1, val);};
+        auto find_right = [&](const T &val) {return std::find(b2, e2, val);};
 
-//        auto walkGenerator = [&](const auto &gen, const auto &ptr, bool left_pos) {
-//            for (auto gen_val = gen(); gen_val.second; gen_val = gen()) {
-//                It it = gen_val.first;
-//                vecT tmp{*it};
-//                bool prevInter = it->inter;
-//                it = std::next(it);
-//                while (it != gen_val.first) {
-//                    tmp.push_back(*it);
-//                    if (it->inter) {
-//                        if (prevInter) {
-//                            it = (left_pos)? find_right(*it) : find_left(*it);
-//                            left_pos = !left_pos;
-//                        } else {
-//                            prevInter = true;
-//                            it = std::next(it);
-//                        }
-//                    } else {
-//                        it = std::next(it);
-//                    }
-//                }
-//                ptr->push_back(tmp);
-//            }
-//        };
+        auto walkGenerator = [&](const auto &gen, const auto &ptr, bool left_pos) {
+            for (auto gen_val = gen(); gen_val.second; gen_val = gen()) {
+                It it = gen_val.first;
+                vecT tmp{*it};
+                bool prevInter = it->inter;
+                it = std::next(it);
+                while (it != gen_val.first) {
+                    tmp.push_back(*it);
+                    if (it->inter) {
+                        if (prevInter) {
+                            it = (left_pos)? find_right(*it) : find_left(*it);
+                            left_pos = !left_pos;
+                        } else {
+                            prevInter = true;
+                            it = std::next(it);
+                        }
+                    } else {
+                        it = std::next(it);
+                    }
+                }
+                ptr->push_back(tmp);
+            }
+        };
 
-//        auto front = std::make_shared<QVector<vecT>>();
-//        auto genF = makeGenerator(b1, e1, front);
-//        walkGenerator(genF, front, true);
+        auto front = std::make_shared<QVector<vecT>>();
+        auto genF = makeGenerator(b1, e1, front);
+        walkGenerator(genF, front, true);
 
-//        auto back = std::make_shared<QVector<vecT>>();
-//        auto genB = makeGenerator(b2, e2, back);
-//        walkGenerator(genB, back, false);
+        auto back = std::make_shared<QVector<vecT>>();
+        auto genB = makeGenerator(b2, e2, back);
+        walkGenerator(genB, back, false);
 
-//        return {to_polygonsF(front), to_polygonsF(back)};
-//    };
+        return {to_polygonsF(front), to_polygonsF(back)};
+    };
 
-//    template<class VecShared>
-//    _polygonsF static to_polygonsF(VecShared pnt)
-//    {
-//        _polygonsF retval;
-//        for (auto it = pnt->begin(); it != pnt->end(); ++it){
-//            _onePolygonsF tmp;
-//            for (const auto &coord_w : *it)
-//                tmp.push_back(static_cast<coord>(coord_w));
-//            retval.push_back(tmp);
-//        }
-//        return retval;
-//    }
+    template<class VecShared>
+    _polygonsF static to_polygonsF(VecShared pnt)
+    {
+        _polygonsF retval;
+        for (auto it = pnt->begin(); it != pnt->end(); ++it){
+            _onePolygonsF tmp;
+            for (const auto &coord_w : *it)
+                tmp.push_back(static_cast<coord>(coord_w));
+            retval.push_back(tmp);
+        }
+        return retval;
+    }
 
-//    template<class It, class VecShared, class FnRet = std::pair<It, bool>, class RetVal = std::function<FnRet(void)>>
-//    RetVal static makeGenerator(It a, It b, VecShared vec) {
-//        RetVal genFn = [it = a, &a, &b, &vec, &genFn]() mutable -> FnRet {
-//            if (it == b)
-//                return {it, false};
-//            it = std::find(
-//                        (it == a)? it : std::next(it),
-//                        b,
-//                        [](const auto &val) { return val.inter; }
-//            );
-//            if (std::any_of(vec->begin(), vec->end(),
-//                            [&](const auto &subVec) { return std::find(subVec.begin(), subVec.end(), *it) != subVec.end(); })
-//                    && it != b)
-//                it = genFn().first;
-//            return {it, it != b};
-//        };
-//        return genFn;
-//    };
+    template<class It, class VecShared, class FnRet = std::pair<It, bool>, class RetVal = std::function<FnRet(void)>>
+    RetVal static makeGenerator(It a, It b, VecShared vec) {
+        RetVal genFn = [it = a, &a, &b, &vec, &genFn]() mutable -> FnRet {
+            if (it == b)
+                return {it, false};
+            it = std::find_if(
+                        (it == a)? it : std::next(it),
+                        b,
+                        [](const auto &val) { return val.inter; }
+            );
+            if (std::any_of(vec->begin(), vec->end(),
+                            [&](const auto &subVec) { return std::find(subVec.begin(), subVec.end(), *it) != subVec.end(); })
+                    && it != b)
+                it = genFn().first;
+            return {it, it != b};
+        };
+        return genFn;
+    };
 };
 
 #endif // FRAME_H

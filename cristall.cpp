@@ -105,12 +105,8 @@ void Cristall::on_pushButton_clicked()
 
 void Cristall::on_comboBox_activated(int index)
 {
-    if (index < 3) {
-        canvas->setOptionDraw(index);
-        canvas->setOptionFill(false);
-    } else {
-        canvas->setOptionDraw(1);
-        canvas->setOptionFill(true);
-    }
+    const bool &sol = index-- < 3;
+    canvas->setOptionDraw(sol ? index : 1);
+    canvas->setOptionFill(!sol);
     canvas->update();
 }
