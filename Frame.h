@@ -149,10 +149,18 @@ private:
     void defaultDrawFigure();
     void drawFigureZBuffer();
     void draw_fn() {
-        optionDraw < 0 ? defaultDrawFigure() :
-        optionDraw < 2 ? drawFigureZBuffer() :
-        optionDraw < 4 ? drawFigureVeyler()  :
-        throw std::range_error("wrong OptionDraw");
+        switch() {
+            case -1:
+                defaultDrawFigure();
+                break;
+            case 0:
+            case 1:
+                drawFigureZBuffer();
+                break;
+            case 2:
+                drawFigureVeyler();
+                break;
+        }
     };
     void drawFigureVeyler();
     void draw_reduced(const _polygonsF&);
