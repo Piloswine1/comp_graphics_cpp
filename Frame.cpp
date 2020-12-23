@@ -149,10 +149,8 @@ void Frame::customLine(int idSegment, intCoord &p1, intCoord &p2, QMap<int, QVec
 
         if (tmp >= buffZ[x][y])
         {
-            if (!optionFill) {
-                buffFrame[x][y] = idSegment;
-                screen.setPixelColor(x, y, 4278190080); // Black
-            }
+            buffFrame[x][y] = idSegment;
+            screen.setPixelColor(x, y, 4278190080); // Black
             buffZ[x][y] = tmp;
         }
 
