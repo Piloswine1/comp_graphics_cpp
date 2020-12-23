@@ -104,6 +104,7 @@ void Frame::fillPolygon(int idSegment, QVector<intCoord> &points)
                     alpha = alpha < 0 ? 0 : alpha;
                     switch(optionDraw)
                     {
+                        case 0:
                         case 1:
                             optionFill ?
                                 screen.setPixelColor(key, i, QColor(155, 155, 155, alpha)):
